@@ -13,5 +13,11 @@ We read it in my paper club, and I wanted to implement it!
 ## Installation
 
 This depends on [tch-rs](https://github.com/LaurentMazare/tch-rs), so follow instructions there first.
+It also depends on tensorflow. [Try following these instructions](https://github.com/tensorflow/rust).
 
+Specifically you'll want to run `cargo build -j 1` once you've done the above.
+
+
+## TODO
+- Initialize algorithm
 
