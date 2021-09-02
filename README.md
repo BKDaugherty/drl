@@ -20,4 +20,5 @@ Specifically you'll want to run `cargo build -j 1` once you've done the above.
 
 ## TODO
 - Initialize algorithm
-
+- Need to see how to train a Pytorch algo in general
+- Check this tutorial out: https://towardsdatascience.com/understanding-pytorch-with-an-example-a-step-by-step-tutorial-81fc5f8c4e8e
