@@ -22,9 +22,10 @@ impl Clone for Action {
 }
 
 /// The reward that the agent gets
+#[derive(Clone, Debug)]
 pub struct Reward(pub f64);
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub enum GameStatus {
     Terminal,
     Ongoing,
@@ -32,7 +33,7 @@ pub enum GameStatus {
 
 // Gamestate could in theory be preprocessed if we wanted as they do in the paper
 // Should this be a boool or enum?
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct GameState {
     pub status: GameStatus,
     pub state: Vec<f64>,

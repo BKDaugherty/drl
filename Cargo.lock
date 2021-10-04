@@ -325,6 +325,7 @@ dependencies = [
  "env_logger",
  "gym-rs",
  "log",
+ "rand 0.8.4",
  "structopt",
  "tch",
  "tensorflow",

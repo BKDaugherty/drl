@@ -11,14 +11,17 @@ pub mod dqn;
 pub mod environment;
 
 use crate::agent::{Agent, Stage};
-use crate::dqn::{DQNAgent, Sequence, SequenceNode};
-use crate::environment::{Action, EpisodeResult, GameState, GameStatus, Reward};
+use crate::dqn::DQNAgent;
+use crate::environment::{Action, EpisodeResult, GameState, Reward};
 
 #[derive(Debug, StructOpt)]
 struct Args {
     /// Number of training episodes to run
-    #[structopt(long, default_value = "20")]
+    #[structopt(long, default_value = "5000")]
     episodes: u32,
+    /// The number of samples to attempt to pull from the replay memory
+    #[structopt(long, default_value = "4")]
+    sampling_size: u8,
 }
 
 impl Agent for DQNAgent {
@@ -30,11 +33,6 @@ impl Agent for DQNAgent {
 fn run_episode_train_dqn(dqn: &mut DQNAgent, env: &mut dyn GymEnv) -> Result<EpisodeResult> {
     let mut episode_reward = 0.0;
     let mut game_state = GameState::new(env.reset(), false);
-    let mut sequence = Sequence {
-        initial_state: game_state.clone(),
-        nodes: vec![],
-    };
-
     loop {
         // Run a forward pass to get the best action
         let action = dqn.model.choose_action(game_state.clone(), Stage::Train);
@@ -43,23 +41,36 @@ fn run_episode_train_dqn(dqn: &mut DQNAgent, env: &mut dyn GymEnv) -> Result<Epi
         let (next_state, reward, game_complete, info) = env.step(action.clone().0);
         let next_state = GameState::new(next_state, game_complete);
 
-        // Append the result to the sequence
-        sequence.nodes.push(SequenceNode {
-            state: next_state.clone(),
-            action: action.clone(),
-        });
+        episode_reward += reward;
 
-	// Store this transition into the replay memory
+        // Store this transition into the replay memory
         dqn.replay_memory
-            .store(sequence.clone(), action.clone(), Reward(reward), next_state)
+            .store(
+                game_state.clone(),
+                action.clone(),
+                Reward(reward),
+                next_state.clone(),
+            )
             .context("storing memory node")?;
 
-	// Update gradients based on a bunch of samples, not just this one to avoid
-	// locality problems
-        let minibatch = dqn.replay_memory.sample();
-        for transition in minibatch {
-            // Perform gradient descent update
+        // Update gradients based on a bunch of samples, not just this one to avoid
+        // locality problems
+        let minibatch = dqn
+            .replay_memory
+            .sample()
+            .context("Sampling for a minibatch of updates")?;
+
+        // Only learn if enough samples have been submitted to the replay memory
+        match minibatch {
+            Some(batch) => {
+                dqn.model
+                    .learn_from_batch(batch)
+                    .context("Learning from sampled batch in episode")?;
+            }
+            None => {}
         }
+
+        game_state = next_state.clone();
 
         if let Some(info) = info {
             info!("Step information: {}", info);
@@ -69,7 +80,9 @@ fn run_episode_train_dqn(dqn: &mut DQNAgent, env: &mut dyn GymEnv) -> Result<Epi
             break;
         }
     }
-    todo!()
+    Ok(EpisodeResult {
+        total_reward: episode_reward,
+    })
 }
 
 fn run_episode(
@@ -117,11 +130,11 @@ fn main() -> Result<()> {
 
     let args = Args::from_args();
 
-    // Create a variable store that locates its variables on the systems CPU
     let vs = nn::VarStore::new(tch::Device::Cpu);
-    let mut agent = DQNAgent::new(&vs.root());
+    let mut agent = DQNAgent::new(&vs, args.sampling_size);
+    let mut episode_results = Vec::new();
 
-    // Train the model
+    // Create a variable store that locates its variables on the systems CPU
     for episode in 1..args.episodes {
         // Create the cart pole environment
         let mut env = CartPoleEnv::default();
@@ -134,12 +147,14 @@ fn main() -> Result<()> {
 
         let episode_result = run_episode_train_dqn(&mut agent, &mut env)
             .context(format!("Running episode {}", episode))?;
-
-        info!(
-            "Episode {} finished successfully, total reward: {}",
-            episode, episode_result.total_reward
-        );
+        episode_results.push(episode_result);
     }
+
+    let avg_reward = episode_results
+        .iter()
+        .fold(0.0, |acc, x| acc + x.total_reward)
+        / args.episodes as f64;
+    info!("Average Reward: {}", avg_reward);
 
     // Get a timestamp to mark our results
     let now = SystemTime::now()
