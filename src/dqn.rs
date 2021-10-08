@@ -1,6 +1,6 @@
 use anyhow::{anyhow, Context, Result};
 use gym_rs::ActionType;
-use log::{error, info};
+use log::{debug, error, info};
 use std::ops::Mul;
 use tch::nn::Module;
 use tch::nn::OptimizerConfig;
@@ -63,6 +63,14 @@ impl ActionValueFunction {
         // Push that tensor back into a single vector
         let current_q_eval_of_action_taken = current_q_eval_of_action_taken.squeeze();
 
+        debug!("States:");
+        // batch.state.print();
+        debug!("Actions Taken: {:?}", batch.actions);
+        debug!(
+            "Current Q eval of actions taken: {:?}",
+            current_q_eval_of_action_taken
+        );
+
         // Send the next states through to compute the best value we think we can get
         // if we are not on a terminal state
         let next_q_eval = self.network.forward(&batch.next_states);
@@ -78,6 +86,7 @@ impl ActionValueFunction {
         ) - batch.next_state_terminal;
         let expected_value_of_future = terminal_mask.mul(LEARNING_RATE) * max_next_q;
         let expected = batch.rewards.squeeze() + expected_value_of_future;
+        debug!("Expected Value of future: {:?}", expected);
         let loss = current_q_eval_of_action_taken.mse_loss(&expected, tch::Reduction::None);
         // Torch("grad can be implicitly created only for scalar outputs")
         // Use mean_loss instead I guess.
@@ -100,7 +109,9 @@ impl ActionValueFunction {
             .to_kind(tch::Kind::Float);
         // Send the tensor through a forward pass of the network
         let output = self.network.forward(&observation);
+        // Why do I squeeze? Because there's an extra dimension that doesn't really matter left over. (1,2) -> (2,)
         let choices = output.squeeze();
+        debug!("Choices: {:?}", choices);
         let arg_max = choices.argmax(0, false);
         match u8::from(arg_max) {
             a if a <= ACTION_SPACE => ActionType::Discrete(a).into(),
@@ -252,17 +263,17 @@ impl ReplayMemory {
 }
 
 /// A structure implementing the DQN algorithm using experience replay
-pub struct DQNAgent {
+pub struct DQNAgent<'a> {
     /// Replay memory of sequence and action taken to result
-    pub replay_memory: ReplayMemory,
+    pub replay_memory: &'a mut ReplayMemory,
     /// The model the agent will use
     pub model: ActionValueFunction,
 }
 
-impl DQNAgent {
-    pub fn new(var_store: &nn::VarStore, sampling_size: u8) -> DQNAgent {
+impl<'a> DQNAgent<'a> {
+    pub fn new(var_store: &nn::VarStore, replay_memory: &'a mut ReplayMemory) -> DQNAgent<'a> {
         Self {
-            replay_memory: ReplayMemory::new(sampling_size),
+            replay_memory,
             model: ActionValueFunction::new(var_store),
         }
     }

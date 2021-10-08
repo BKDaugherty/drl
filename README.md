@@ -61,6 +61,29 @@ loss of each sample, and every single element in loss has been averaged on batch
 Rust unzip is good for Vec<(T, U)> -> (Vec<T>, Vec<U>), but doesn't work for variable length :(
 - Types :(
 
+#### Doing some Debugging
+
+I seem to only be taking the action push to the left ever...
+
+Things I need to know
+- What is a reasonable Q Value for an action?
+- I take the max of the two Q Values right? That's how I decide what action to take? Can we compare the two?
+
+Maybe I'm just not training enough? Without epochs, I don't ever give a new random start to the algorithm... I wonder if I'm calculating rewards correctly though?
+
+Let's try epochs..
+
+Replay Memory should be kept out of DQN. Perhaps it just gets a reference to the ReplayMemory instead.
+
+Maybe start over and try using this: https://towardsdatascience.com/deep-q-learning-tutorial-mindqn-2a4c855abffc
+- Things I haven't done: Target vs Main Network
+- Exploration Strategy
+- Learning every 4 steps as opposed to every step
+- Smart initialization of weights
+- exploring different loss functions!
+- Optimizing replay buffer to not be slow as shit (Max Size, maybe not 4 separate arrays?)
+- Running in release mode
+
 
 
 
