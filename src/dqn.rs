@@ -1,27 +1,36 @@
 use anyhow::{anyhow, Context, Result};
 use gym_rs::ActionType;
 use log::{debug, error, info};
+use std::collections::VecDeque;
 use std::ops::Mul;
 use tch::nn::Module;
 use tch::nn::OptimizerConfig;
 use tch::{nn, Tensor};
 
 use crate::agent::Stage;
-use crate::environment::{Action, GameState, GameStatus, Reward, ACTION_SPACE, OBSERVATION_SPACE};
+use crate::environment::{
+    Action, GameState, GameStatus, LearningResult, Reward, ACTION_SPACE, OBSERVATION_SPACE,
+};
 
+// TODO: Make these hyperparameters
 const LEARNING_RATE: f64 = 0.01;
+const GAMMA: f64 = 0.999;
 
 #[derive(Debug)]
 /// A structure representing an action value function Q as defined in the paper.
 pub struct ActionValueFunction {
-    /// A neural network representing the parameters Q
+    main_vs: tch::nn::VarStore,
+    /// A neural network representing our Q Function
     network: nn::Sequential,
+    /// A neural network used in the update process of our Q Function for stability
+    target_network: nn::Sequential,
+    /// An optimizer for updating our main network
     optimizer: nn::Optimizer<nn::Adam>,
+    target_vs: tch::nn::VarStore,
 }
 
 impl ActionValueFunction {
-    fn new(var_store: &nn::VarStore) -> Self {
-        let var_store_path = &var_store.root();
+    fn create_network(var_store_path: &nn::Path) -> nn::Sequential {
         let input_layer = nn::linear(
             var_store_path / "input_layer",
             OBSERVATION_SPACE,
@@ -37,46 +46,63 @@ impl ActionValueFunction {
             .add(second_layer)
             .add_fn(|xs| xs.relu())
             .add(output_layer);
+        network
+    }
+    fn new() -> Self {
+        let vs = nn::VarStore::new(tch::Device::Cpu);
+        let network = ActionValueFunction::create_network(&vs.root());
+        let target_vs = nn::VarStore::new(tch::Device::Cpu);
+        let target_network = ActionValueFunction::create_network(&target_vs.root());
 
         // Stole this from examples
         // https://github.com/LaurentMazare/tch-rs/blob/master/examples/reinforcement-learning/policy_gradient.rs
-        let optimizer = tch::nn::Adam::default()
-            .build(&var_store, LEARNING_RATE)
-            .unwrap();
+        let optimizer = tch::nn::Adam::default().build(&vs, LEARNING_RATE).unwrap();
 
-        Self { network, optimizer }
+        Self {
+            main_vs: vs,
+            network,
+            optimizer,
+            target_network,
+            target_vs,
+        }
     }
 
     /// Accepts a batch of experiences and performs a gradient descent update
     /// on the model.
-    pub fn learn_from_batch(&mut self, batch: ReplayBatch) -> Result<()> {
+    pub fn learn_from_batch(&mut self, batch: ReplayBatch) -> Result<LearningResult> {
         // Get what the current q network believes to be the value of what it did from memory
         let current_q_eval_of_action_taken = self.network.forward(&batch.state);
 
+        // info!("Q Values of batch of actions:");
+        // current_q_eval_of_action_taken.print();
+
+        let batch_actions = batch.actions.to_kind(tch::Kind::Int64).unsqueeze(1);
+
+        // info!("Batch Actions:");
+        // batch_actions.print();
+
         // Extract the values of the actions we actually took
-        let current_q_eval_of_action_taken = current_q_eval_of_action_taken.gather(
-            0,
-            &batch.actions.to_kind(tch::Kind::Int64).unsqueeze(1),
-            false,
-        );
+        let current_q_eval_of_action_taken =
+            current_q_eval_of_action_taken.gather(1, &batch_actions, false);
+
+        // info!("Gathered:");
+        // current_q_eval_of_action_taken.print();p
 
         // Push that tensor back into a single vector
         let current_q_eval_of_action_taken = current_q_eval_of_action_taken.squeeze();
 
-        debug!("States:");
-        // batch.state.print();
-        debug!("Actions Taken: {:?}", batch.actions);
-        debug!(
-            "Current Q eval of actions taken: {:?}",
-            current_q_eval_of_action_taken
-        );
-
         // Send the next states through to compute the best value we think we can get
         // if we are not on a terminal state
-        let next_q_eval = self.network.forward(&batch.next_states);
+        let next_q_eval = self.target_network.forward(&batch.next_states);
+
+        // info!("Next State Q:");
+        // next_q_eval.print();
 
         // Get the best - Deleted index
-        let max_next_q = next_q_eval.max();
+        let max_next_q = next_q_eval.amax(&[1], false);
+
+        // info!("Max next Q:");
+        // max_next_q.print();
 
         // The expected reward is whatever we received for this state + the learning rate times
         // whatever we think we can get if the state is nonterminal.
@@ -84,17 +110,43 @@ impl ActionValueFunction {
             &batch.next_state_terminal.size(),
             (tch::Kind::Float, tch::Device::Cpu),
         ) - batch.next_state_terminal;
-        let expected_value_of_future = terminal_mask.mul(LEARNING_RATE) * max_next_q;
+
+        // info!("terminal mask");
+        // terminal_mask.print();
+
+        let expected_value_of_future = terminal_mask.mul(GAMMA) * max_next_q;
         let expected = batch.rewards.squeeze() + expected_value_of_future;
-        debug!("Expected Value of future: {:?}", expected);
-        let loss = current_q_eval_of_action_taken.mse_loss(&expected, tch::Reduction::None);
+
+        // info!("Expected Value of future:");
+        // expected.print();
+
+        // Understanding: what does the loss actually signify here?
+        // TODO: Make loss configurable via hyperparameters
+        // Try out using Huber Loss
+        // info!("Q:");
+        // current_q_eval_of_action_taken.print();
+        // info!("Expected:");
+        // expected.print();
+
+        let loss = current_q_eval_of_action_taken.huber_loss(&expected, tch::Reduction::None, 1.0);
+
+        // info!("Loss:");
+        // loss.print();
+
+        // let loss = current_q_eval_of_action_taken.mse_loss(&expected, tch::Reduction::None);
         // Torch("grad can be implicitly created only for scalar outputs")
         // Use mean_loss instead I guess.
+
+        // // Understanding: Why does taking the mean make sense?
         let mean_loss = loss.mean(tch::Kind::Float);
+
+        // Understanding: Can we look at the weights and see what update was made somehow?
         self.optimizer.zero_grad();
         mean_loss.backward();
         self.optimizer.step();
-        Ok(())
+        Ok(LearningResult {
+            mean_loss: f64::from(mean_loss),
+        })
     }
 
     // Do I need to do some kind of no_grad thing here based on stage?
@@ -109,9 +161,9 @@ impl ActionValueFunction {
             .to_kind(tch::Kind::Float);
         // Send the tensor through a forward pass of the network
         let output = self.network.forward(&observation);
+
         // Why do I squeeze? Because there's an extra dimension that doesn't really matter left over. (1,2) -> (2,)
         let choices = output.squeeze();
-        debug!("Choices: {:?}", choices);
         let arg_max = choices.argmax(0, false);
         match u8::from(arg_max) {
             a if a <= ACTION_SPACE => ActionType::Discrete(a).into(),
@@ -121,6 +173,19 @@ impl ActionValueFunction {
                 panic!("Unknown action type {}", unknown);
             }
         }
+    }
+
+    /// Copies the main to target
+    pub fn copy_main_to_target(&mut self) -> Result<()> {
+        self.target_vs
+            .copy(&self.main_vs)
+            .expect("Should be able to copy variable store");
+        Ok(())
+    }
+    /// Saves the main network to a file
+    pub fn save_main_network(&self, filename: &str) -> Result<()> {
+        self.main_vs.save(filename)?;
+        Ok(())
     }
 }
 
@@ -134,10 +199,10 @@ pub struct ReplayMemory {
 /// A grouping of experiences used for both storage and updates to the
 /// net
 pub struct ReplayStorage {
-    pub states: Vec<GameState>,
-    pub actions: Vec<Action>,
-    pub rewards: Vec<Reward>,
-    pub next_states: Vec<GameState>,
+    pub states: VecDeque<GameState>,
+    pub actions: VecDeque<Action>,
+    pub rewards: VecDeque<Reward>,
+    pub next_states: VecDeque<GameState>,
 }
 
 /// A Batch of experiences stored as tensors for easy updates
@@ -157,18 +222,19 @@ impl ReplayMemory {
         reward: Reward,
         next_state: GameState,
     ) -> Result<()> {
-        self.storage.states.push(previous_state);
-        self.storage.actions.push(action_taken);
-        self.storage.rewards.push(reward);
-        self.storage.next_states.push(next_state);
+        self.storage.states.push_back(previous_state);
+        self.storage.actions.push_back(action_taken);
+        self.storage.rewards.push_back(reward);
+        self.storage.next_states.push_back(next_state);
         Ok(())
     }
-    /// Returns a ReplayBatch, or None if not enough samples have been stored
-    pub fn sample(&self) -> Result<Option<ReplayBatch>> {
-        if self.storage.states.len() < self.sampling_size as usize {
-            return Ok(None);
-        }
 
+    pub fn len(&self) -> usize {
+        self.storage.states.len()
+    }
+
+    /// Returns a ReplayBatch, or None if not enough samples have been stored
+    pub fn sample(&self) -> Result<ReplayBatch> {
         let indices = rand::seq::index::sample(
             &mut rand::thread_rng(),
             self.storage.states.len(),
@@ -240,22 +306,22 @@ impl ReplayMemory {
             .collect();
         let next_states = Tensor::stack(next_states.as_slice(), 0);
 
-        Ok(Some(ReplayBatch {
+        Ok(ReplayBatch {
             state: batch_observations,
             actions: batch_actions,
             rewards,
             next_states,
             next_state_terminal,
-        }))
+        })
     }
 
     pub fn new(sampling_size: u8) -> ReplayMemory {
         ReplayMemory {
             storage: ReplayStorage {
-                states: Vec::new(),
-                actions: Vec::new(),
-                rewards: Vec::new(),
-                next_states: Vec::new(),
+                states: VecDeque::new(),
+                actions: VecDeque::new(),
+                rewards: VecDeque::new(),
+                next_states: VecDeque::new(),
             },
             sampling_size,
         }
@@ -271,10 +337,10 @@ pub struct DQNAgent<'a> {
 }
 
 impl<'a> DQNAgent<'a> {
-    pub fn new(var_store: &nn::VarStore, replay_memory: &'a mut ReplayMemory) -> DQNAgent<'a> {
+    pub fn new(replay_memory: &'a mut ReplayMemory) -> DQNAgent<'a> {
         Self {
             replay_memory,
-            model: ActionValueFunction::new(var_store),
+            model: ActionValueFunction::new(),
         }
     }
 }

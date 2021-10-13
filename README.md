@@ -75,15 +75,47 @@ Let's try epochs..
 
 Replay Memory should be kept out of DQN. Perhaps it just gets a reference to the ReplayMemory instead.
 
-Maybe start over and try using this: https://towardsdatascience.com/deep-q-learning-tutorial-mindqn-2a4c855abffc
+Maybe start over and try using this: [DQN tutorial](https://towardsdatascience.com/deep-q-learning-tutorial-mindqn-2a4c855abffc)
 - Things I haven't done: Target vs Main Network
 - Exploration Strategy
 - Learning every 4 steps as opposed to every step
 - Smart initialization of weights
+  - Should I try the He Uniform Initalization of weights?
 - exploring different loss functions!
 - Optimizing replay buffer to not be slow as shit (Max Size, maybe not 4 separate arrays?)
+  - Use VecDeque for specific size
 - Running in release mode
 
+Implementation Guides
+- How do I copy values of my NN from Main to Target
+- Steps should be exposed over an epoch in order to better train the network
+  - Copy to Target every 100
+  - Train on a batch every 4
+  - Epsilon should be a function of episodes or maybe steps?
+- Huber Loss instead of MSE
+- Hyperparameters
+  - Min Replay Size (1000)
+  - Batch Size
+  - Replay Total Size (50000)
+  - Learning Rate (?)
+  - Discount Factor (?)
+    - Used for max future q
+  - Epsilon (They edit epsilon every episode)
+    - Epsilon Update: epsilon = min_epsilon + (max_epsilon - min_epsilon) * np.exp(-decay * episode)
 
+Second
 
+- Epoch has Steps and Episodes
+  (Steps are important meta information)
+  - Epsilon should be passed in to the network so it can decide
 
+- Devlog: Currently implementing the main target value swap. Messing with DQN AV function.
+- Need a good way to clone my sequential network. -> do so by coupling main_vs and network then impl clone
+
+Okay I implemented epsilon, and target network and parameterized a bunch of things.
+- Still need to do...
+  - Learning Rate
+  - Check my math -> Seems I am learning to fail? (Increasing episodes makes me lose consistently...)
+  - Should Replay Memory be shared over epochs? I think no?
+  
+- Also look into how I can evaluate / log interesting things if I want to!

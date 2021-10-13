@@ -51,8 +51,16 @@ impl GameState {
     }
 }
 
+#[derive(Debug, Default)]
 /// A Structure to capture all of the stuff going on in an episode
 pub struct EpisodeResult {
     /// The total reward achieved by the agent in this episode
     pub total_reward: f64,
+    pub learning_summaries: Vec<LearningResult>,
+}
+
+#[derive(Debug)]
+pub struct LearningResult {
+    /// The loss
+    pub mean_loss: f64,
 }
