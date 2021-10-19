@@ -117,6 +117,9 @@ impl ActionValueFunction {
         let expected_value_of_future = terminal_mask.mul(GAMMA) * max_next_q;
         let expected = batch.rewards.squeeze() + expected_value_of_future;
 
+        // Understanding: Can we look at the weights and see what update was made somehow?
+        self.optimizer.zero_grad();
+
         // info!("Expected Value of future:");
         // expected.print();
 
@@ -140,8 +143,6 @@ impl ActionValueFunction {
         // // Understanding: Why does taking the mean make sense?
         let mean_loss = loss.mean(tch::Kind::Float);
 
-        // Understanding: Can we look at the weights and see what update was made somehow?
-        self.optimizer.zero_grad();
         mean_loss.backward();
         self.optimizer.step();
         Ok(LearningResult {

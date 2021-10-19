@@ -1,6 +1,6 @@
 # Vanilla DQN in Rust
 
-This is an implementation of a Vanilla DQN as described [here](https://www.cs.toronto.edu/~vmnih/docs/dqn.pdf), but in Rust!
+This is my attempt at an implementation of a Vanilla DQN as described [here](https://www.cs.toronto.edu/~vmnih/docs/dqn.pdf), but in Rust!
 
 ## Why Rust?
 
@@ -13,10 +13,8 @@ We read it in my paper club, and I wanted to implement it!
 ## Installation
 
 This depends on [tch-rs](https://github.com/LaurentMazare/tch-rs), so follow instructions there first.
-It also depends on tensorflow. [Try following these instructions](https://github.com/tensorflow/rust).
 
 Specifically you'll want to run `cargo build -j 1` once you've done the above.
-
 
 ## Anything below this is probably not all that interesting, and is just where I dump my thoughts
 - Need to see how to train a Pytorch algo in general
@@ -119,3 +117,5 @@ Okay I implemented epsilon, and target network and parameterized a bunch of thin
   - Should Replay Memory be shared over epochs? I think no?
   
 - Also look into how I can evaluate / log interesting things if I want to!
+
+Ok so I did some plotting, and although I'm getting interesting results, I think maybe I'm doing something wildly incorrect, or maybe drl really just is quite brittle. Time to try implementing something simpler first. I'll be back DQN!
