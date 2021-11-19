@@ -1,5 +1,5 @@
 use crate::agent::Agent;
-use anyhow::{Context, Result};
+use anyhow::{anyhow, Context, Result};
 use gym_rs::{ActionType, GifRender, GymEnv};
 use log::info;
 use std::clone::Clone;
@@ -22,6 +22,17 @@ pub struct LearningResult {
 // Pull Request: https://github.com/MathisWellmann/gym-rs/pull/1
 /// An Action taken in an environment
 pub struct Action(pub ActionType);
+
+impl Action {
+    pub fn discrete_value(&self) -> Result<u8> {
+        match self.0 {
+            ActionType::Discrete(value) => Ok(value),
+            _ => Err(anyhow!(
+                "Attempted to get discrete value out of continuous action"
+            )),
+        }
+    }
+}
 
 impl From<ActionType> for Action {
     fn from(value: ActionType) -> Action {

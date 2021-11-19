@@ -11,4 +11,3 @@ pub trait Agent {
     /// Given the current state, outputs the action the agent would like to take
     fn choose_action(&mut self, state: GameState) -> Action;
 }
-

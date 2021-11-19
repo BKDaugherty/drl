@@ -1,0 +1,141 @@
+warning: unused imports: `Agent`, `Stage`
+ --> src/main.rs:1:20
+  |
+1 | use crate::agent::{Agent, Stage};
+  |                    ^^^^^  ^^^^^
+  |
+  = note: `#[warn(unused_imports)]` on by default
+
+warning: unused imports: `EpisodeResult`, `LearningResult`, `run_episode`
+ --> src/main.rs:3:26
+  |
+3 | use crate::environment::{run_episode, Action, EpisodeResult, LearningResult};
+  |                          ^^^^^^^^^^^          ^^^^^^^^^^^^^  ^^^^^^^^^^^^^^
+
+warning: unused import: `MountainCarEnv`
+ --> src/main.rs:6:58
+  |
+6 | use gym_rs::{ActionType, CartPoleEnv, GifRender, GymEnv, MountainCarEnv};
+  |                                                          ^^^^^^^^^^^^^^
+
+warning: unused import: `gym_rs::ActionType`
+ --> src/agent.rs:2:5
+  |
+2 | use gym_rs::ActionType;
+  |     ^^^^^^^^^^^^^^^^^^
+
+warning: unused import: `Context`
+ --> src/environment.rs:2:22
+  |
+2 | use anyhow::{anyhow, Context, Result};
+  |                      ^^^^^^^
+
+warning: unused import: `plotters::prelude`
+ --> src/main.rs:8:5
+  |
+8 | use plotters::prelude::*;
+  |     ^^^^^^^^^^^^^^^^^
+
+warning: unused variable: `info`
+   --> src/main.rs:136:49
+    |
+136 |         let (next_state, reward, game_complete, info) = env.step(action.clone().0);
+    |                                                 ^^^^ help: if this is intentional, prefix it with an underscore: `_info`
+    |
+    = note: `#[warn(unused_variables)]` on by default
+
+warning: unused variable: `perform_args`
+   --> src/main.rs:243:26
+    |
+243 |         Command::Perform(perform_args) => {}
+    |                          ^^^^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_perform_args`
+
+warning: enum is never used: `Stage`
+ --> src/agent.rs:4:10
+  |
+4 | pub enum Stage {
+  |          ^^^^^
+  |
+  = note: `#[warn(dead_code)]` on by default
+
+warning: variant is never constructed: `Terminal`
+  --> src/environment.rs:50:5
+   |
+50 |     Terminal,
+   |     ^^^^^^^^
+
+warning: variant is never constructed: `Ongoing`
+  --> src/environment.rs:51:5
+   |
+51 |     Ongoing,
+   |     ^^^^^^^
+
+warning: associated function is never used: `new`
+  --> src/environment.rs:62:12
+   |
+62 |     pub fn new(state: Vec<f64>, game_complete: bool) -> Self {
+   |            ^^^
+
+warning: function is never used: `run_episode`
+  --> src/environment.rs:82:8
+   |
+82 | pub fn run_episode(
+   |        ^^^^^^^^^^^
+
+warning: field is never read: `vs`
+  --> src/main.rs:48:5
+   |
+48 |     vs: nn::VarStore,
+   |     ^^^^^^^^^^^^^^^^
+
+warning: 14 warnings emitted
+
+    Finished dev [unoptimized + debuginfo] target(s) in 0.07s
+     Running `target/debug/vpg train`
+[2021-11-10T18:05:05Z INFO  vpg] Epoch 0 complete after 242 episodes. Rewards -> Avg: 20.673553719008265, Max: 78, Min: 8
+[2021-11-10T19:50:00Z INFO  vpg] Epoch 1 complete after 181 episodes. Rewards -> Avg: 27.635359116022098, Max: 90, Min: 9
+[2021-11-10T19:50:25Z INFO  vpg] Epoch 2 complete after 167 episodes. Rewards -> Avg: 30.137724550898202, Max: 130, Min: 9
+[2021-11-10T19:50:58Z INFO  vpg] Epoch 3 complete after 157 episodes. Rewards -> Avg: 31.94267515923567, Max: 182, Min: 9
+[2021-11-10T19:51:17Z INFO  vpg] Epoch 4 complete after 142 episodes. Rewards -> Avg: 35.316901408450704, Max: 107, Min: 10
+[2021-11-10T19:51:46Z INFO  vpg] Epoch 5 complete after 140 episodes. Rewards -> Avg: 35.98571428571429, Max: 110, Min: 11
+[2021-11-10T19:53:01Z INFO  vpg] Epoch 6 complete after 129 episodes. Rewards -> Avg: 38.86821705426357, Max: 98, Min: 12
+[2021-11-10T19:54:02Z INFO  vpg] Epoch 7 complete after 113 episodes. Rewards -> Avg: 44.442477876106196, Max: 114, Min: 14
+[2021-11-10T19:54:34Z INFO  vpg] Epoch 8 complete after 122 episodes. Rewards -> Avg: 41.09016393442623, Max: 115, Min: 12
+[2021-11-10T19:57:03Z INFO  vpg] Epoch 9 complete after 104 episodes. Rewards -> Avg: 48.95192307692308, Max: 133, Min: 16
+[2021-11-10T19:57:31Z INFO  vpg] Epoch 10 complete after 99 episodes. Rewards -> Avg: 50.77777777777778, Max: 201, Min: 16
+[2021-11-10T19:58:22Z INFO  vpg] Epoch 11 complete after 94 episodes. Rewards -> Avg: 53.361702127659576, Max: 118, Min: 11
+[2021-11-10T19:59:22Z INFO  vpg] Epoch 12 complete after 86 episodes. Rewards -> Avg: 58.66279069767442, Max: 199, Min: 14
+[2021-11-10T20:01:48Z INFO  vpg] Epoch 13 complete after 87 episodes. Rewards -> Avg: 57.804597701149426, Max: 189, Min: 17
+[2021-11-10T20:05:34Z INFO  vpg] Epoch 14 complete after 79 episodes. Rewards -> Avg: 63.49367088607595, Max: 229, Min: 22
+[2021-11-10T20:06:58Z INFO  vpg] Epoch 15 complete after 78 episodes. Rewards -> Avg: 64.66666666666667, Max: 180, Min: 19
+[2021-11-10T20:08:44Z INFO  vpg] Epoch 16 complete after 73 episodes. Rewards -> Avg: 69.35616438356165, Max: 267, Min: 28
+[2021-11-10T20:10:03Z INFO  vpg] Epoch 17 complete after 70 episodes. Rewards -> Avg: 71.82857142857142, Max: 237, Min: 19
+[2021-11-10T20:11:53Z INFO  vpg] Epoch 18 complete after 69 episodes. Rewards -> Avg: 72.94202898550725, Max: 158, Min: 15
+[2021-11-10T20:13:30Z INFO  vpg] Epoch 19 complete after 65 episodes. Rewards -> Avg: 77.1076923076923, Max: 159, Min: 26
+[2021-11-10T20:15:00Z INFO  vpg] Epoch 20 complete after 69 episodes. Rewards -> Avg: 73.01449275362319, Max: 177, Min: 18
+[2021-11-10T20:19:24Z INFO  vpg] Epoch 21 complete after 54 episodes. Rewards -> Avg: 93.12962962962963, Max: 194, Min: 20
+[2021-11-10T20:23:18Z INFO  vpg] Epoch 22 complete after 50 episodes. Rewards -> Avg: 103.3, Max: 232, Min: 33
+[2021-11-10T20:27:25Z INFO  vpg] Epoch 23 complete after 37 episodes. Rewards -> Avg: 135.21621621621622, Max: 306, Min: 25
+[2021-11-10T20:29:29Z INFO  vpg] Epoch 24 complete after 41 episodes. Rewards -> Avg: 124.5609756097561, Max: 276, Min: 38
+[2021-11-10T20:31:57Z INFO  vpg] Epoch 25 complete after 36 episodes. Rewards -> Avg: 139.5, Max: 290, Min: 27
+[2021-11-10T21:17:18Z INFO  vpg] Epoch 26 complete after 42 episodes. Rewards -> Avg: 121.11904761904762, Max: 270, Min: 24
+[2021-11-10T21:18:26Z INFO  vpg] Epoch 27 complete after 37 episodes. Rewards -> Avg: 137.43243243243242, Max: 297, Min: 25
+[2021-11-10T21:22:08Z INFO  vpg] Epoch 28 complete after 35 episodes. Rewards -> Avg: 144.62857142857143, Max: 276, Min: 28
+[2021-11-10T21:27:23Z INFO  vpg] Epoch 29 complete after 32 episodes. Rewards -> Avg: 164.78125, Max: 326, Min: 32
+[2021-11-10T21:31:46Z INFO  vpg] Epoch 30 complete after 28 episodes. Rewards -> Avg: 182.78571428571428, Max: 473, Min: 26
+[2021-11-10T21:38:31Z INFO  vpg] Epoch 31 complete after 28 episodes. Rewards -> Avg: 181.42857142857142, Max: 314, Min: 97
+[2021-11-10T21:44:31Z INFO  vpg] Epoch 32 complete after 25 episodes. Rewards -> Avg: 203.48, Max: 397, Min: 107
+[2021-11-10T21:49:43Z INFO  vpg] Epoch 33 complete after 24 episodes. Rewards -> Avg: 218.58333333333334, Max: 576, Min: 101
+[2021-11-10T21:54:20Z INFO  vpg] Epoch 34 complete after 26 episodes. Rewards -> Avg: 197.76923076923077, Max: 609, Min: 85
+[2021-11-10T22:05:39Z INFO  vpg] Epoch 35 complete after 17 episodes. Rewards -> Avg: 295.2352941176471, Max: 517, Min: 115
+[2021-11-10T22:07:41Z INFO  vpg] Epoch 36 complete after 19 episodes. Rewards -> Avg: 266.7368421052632, Max: 531, Min: 90
+[2021-11-10T22:11:40Z INFO  vpg] Epoch 37 complete after 19 episodes. Rewards -> Avg: 264.7368421052632, Max: 564, Min: 131
+[2021-11-10T22:17:38Z INFO  vpg] Epoch 38 complete after 20 episodes. Rewards -> Avg: 260.9, Max: 656, Min: 51
+[2021-11-10T22:20:25Z INFO  vpg] Epoch 39 complete after 17 episodes. Rewards -> Avg: 324.5882352941176, Max: 712, Min: 123
+[2021-11-10T23:42:13Z INFO  vpg] Epoch 40 complete after 13 episodes. Rewards -> Avg: 395.53846153846155, Max: 844, Min: 119
+[2021-11-11T00:03:35Z INFO  vpg] Epoch 41 complete after 10 episodes. Rewards -> Avg: 558, Max: 1194, Min: 156
+[2021-11-11T00:13:31Z INFO  vpg] Epoch 42 complete after 10 episodes. Rewards -> Avg: 505.2, Max: 935, Min: 257
+[2021-11-11T00:35:48Z INFO  vpg] Epoch 43 complete after 15 episodes. Rewards -> Avg: 337.26666666666665, Max: 957, Min: 132
+[2021-11-11T00:40:30Z INFO  vpg] Epoch 44 complete after 21 episodes. Rewards -> Avg: 247.52380952380952, Max: 530, Min: 131
+[2021-11-11T00:44:34Z INFO  vpg] Epoch 45 complete after 20 episodes. Rewards -> Avg: 251.55, Max: 481, Min: 139
+[2021-11-11T00:49:31Z INFO  vpg] Epoch 46 complete after 22 episodes. Rewards -> Avg: 237.1818181818182, Max: 454, Min: 133

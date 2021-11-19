@@ -16,7 +16,7 @@ pub struct TrainArgs<H: StructOpt> {
     #[structopt(long, default_value = "5000")]
     pub episodes: u32,
     /// Number of training epochs to run
-    #[structopt(long, default_value = "5")]
+    #[structopt(long, default_value = "50")]
     pub epochs: u32,
     #[structopt(flatten)]
     pub hyperparameters: H,
